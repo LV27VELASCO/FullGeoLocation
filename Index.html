@@ -1,0 +1,129 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture Client Location</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Replace this URL with your application's endpoint
+            const serverUrl = "http://127.0.0.1:5000/save-location";
+
+            var modalLoading = document.getElementById("loading");
+            var modalSuccess = document.getElementById("success");
+            var modalNotSucces = document.getElementById("notsucces");
+            var modalNotGeolocation = document.getElementById("notGeolocation");
+            var modalError = document.getElementById("error");
+            var modalErrorLocation = document.getElementById("errorLocation");
+
+            // Replace this with the User ID passed dynamically, e.g., through query parameters
+            const userId = new URLSearchParams(window.location.search).get("user_id");
+
+            if (!userId) {
+                alert("User ID is missing!");
+                return;
+            }
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const locationData = {
+                            user_id: userId,
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        // Send location data to the server
+                        fetch(serverUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(locationData)
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                modalLoading.classList.add("hidden");
+                                modalSuccess.classList.remove("hidden");
+                            } else {
+                                modalLoading.classList.add("hidden");
+                                modalNotSucces.classList.remove("hidden");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error sending data:", error);
+                            modalLoading.classList.add("hidden");
+                            modalError.classList.remove("hidden");
+                        });
+                    },
+                    (error) => {
+                        console.error("Error sending data:", error);
+                        modalLoading.classList.add("hidden");
+                        modalErrorLocation.classList.remove("hidden");
+                    }
+                );
+            } else {
+                odalLoading.classList.add("hidden");
+                modalNotGeolocation.classList.remove("hidden");
+            }
+        });
+    </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen flex-wrap p-8">
+
+    <div id="loading" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Capturing Your Location...</h1>
+        <p class="text-gray-600">Please wait while we gather your location data.</p>
+        <div class="mt-4">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+    </div>
+
+    <div id="success" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
+        <svg class="w-12 h-12 mx-auto text-green-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
+            viewBox="0 0 20 20">
+            <path
+                d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800 mb-3">Exitoso!</h1>
+        <p class="text-gray-600">¡Los datos de ubicación se enviaron correctamente!</p>
+    </div>
+
+
+   <div id="notsucces" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-blue-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800 mb-3">¡Uppss...!</h1>
+        <p class="text-gray-600">No se pudieron enviar los datos de ubicación.</p>
+    </div>
+
+    <div id="notGeolocation" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-blue-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800 mb-3">¡Upps!</h1>
+        <p class="text-gray-600">Este navegador no admite la geolocalización.</p>
+    </div>
+
+    <div id="error" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-red-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800 mb-3">Lo sentimos :'c</h1>
+        <p class="text-gray-600">Se produjo un error al enviar datos.</p>
+    </div>
+
+    <div id="errorLocation" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-red-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        </svg>
+        <h1 class="text-2xl font-bold text-gray-800 mb-3">Opss...!</h1>
+        <p class="text-gray-600">No se pudo obtener la ubicación. Por favor concede permisos de ubicación al navegador</p>
+    </div>
+</body>
+</html>
