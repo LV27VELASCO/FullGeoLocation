@@ -7,7 +7,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             // Replace this URL with your application's endpoint
-            const serverUrl = "http://127.0.0.1:5000/save-location";
+            const serverUrl = window.location.hostname === "localhost" ? "http://127.0.0.1:5000/api/save-location" : "https://apifullgeo.onrender.com/api/save-location";
 
             var modalLoading = document.getElementById("loading");
             var modalSuccess = document.getElementById("success");
