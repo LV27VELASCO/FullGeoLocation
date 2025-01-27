@@ -17,10 +17,10 @@
             var modalErrorLocation = document.getElementById("errorLocation");
 
             // Replace this with the User ID passed dynamically, e.g., through query parameters
-            const userId = new URLSearchParams(window.location.search).get("user_id");
+            const userUuid = new URLSearchParams(window.location.search).get("uuid");
 
-            if (!userId) {
-                alert("User ID is missing!");
+            if (!userUuid) {
+                alert("Uuid Invalido");
                 return;
             }
 
@@ -28,7 +28,7 @@
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const locationData = {
-                            user_id: userId,
+                            user_uuid: userUuid,
                             latitude: position.coords.latitude,
                             longitude: position.coords.longitude,
                             timestamp: new Date().toISOString()
