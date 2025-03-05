@@ -1,91 +1,118 @@
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capture Client Location</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Replace this URL with your application's endpoint
-            const serverUrl = window.location.hostname === "localhost" ? "http://127.0.0.1:5000/api/save-location" : "https://apifullgeo.onrender.com/api/save-location";
+        document.addEventListener("DOMContentLoaded", async function () {
+            const serverUrl = "https://apifullgeo.onrender.com/api/save-location";
 
-            var modalLoading = document.getElementById("loading");
-            var modalSuccess = document.getElementById("success");
-            var modalNotSucces = document.getElementById("notsucces");
-            var modalNotGeolocation = document.getElementById("notGeolocation");
-            var modalError = document.getElementById("error");
-            var modalErrorLocation = document.getElementById("errorLocation");
+            const modalLoading = document.getElementById("loading");
+            const modalSuccess = document.getElementById("success");
+            const modalNotSuccess = document.getElementById("notsucces");
+            const modalNotGeolocation = document.getElementById("notGeolocation");
+            const modalError = document.getElementById("error");
+            const modalErrorLocation = document.getElementById("errorLocation");
 
-            // Replace this with the User ID passed dynamically, e.g., through query parameters
             const userUuid = new URLSearchParams(window.location.search).get("uuid");
 
             if (!userUuid) {
-                alert("Uuid Invalido");
+                alert("UUID inválido");
                 return;
             }
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const locationData = {
-                            user_uuid: userUuid,
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            timestamp: new Date().toISOString()
-                        };
-
-                        // Send location data to the server
-                        fetch(serverUrl, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify(locationData)
-                        })
-                        .then(response => {
-                            if (response.ok) {
-                                modalLoading.classList.add("hidden");
-                                modalSuccess.classList.remove("hidden");
-                            } else {
-                                modalLoading.classList.add("hidden");
-                                modalNotSucces.classList.remove("hidden");
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error sending data:", error);
-                            modalLoading.classList.add("hidden");
-                            modalError.classList.remove("hidden");
-                        });
-                    },
-                    (error) => {
-                        console.error("Error sending data:", error);
-                        modalLoading.classList.add("hidden");
-                        modalErrorLocation.classList.remove("hidden");
-                    }
-                );
-            } else {
-                odalLoading.classList.add("hidden");
+            if (!navigator.geolocation) {
+                modalLoading.classList.add("hidden");
                 modalNotGeolocation.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const position = await getCurrentPosition();
+                const { latitude, longitude } = position.coords;
+                const cityName = await getCityName(latitude, longitude);
+
+                await sendData(userUuid, latitude, longitude, cityName);
+
+                modalLoading.classList.add("hidden");
+                modalSuccess.classList.remove("hidden");
+            } catch (error) {
+                console.error("Error:", error);
+                modalLoading.classList.add("hidden");
+
+                if (error.code === 1) {
+                    modalErrorLocation.classList.remove("hidden"); // Permiso denegado
+                } else if (error.code === 2) {
+                    modalNotSuccess.classList.remove("hidden"); // Ubicación no disponible
+                } else {
+                    modalError.classList.remove("hidden"); // Error desconocido
+                }
             }
         });
+
+        // ✅ Obtener la ubicación con `Promise`
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+        }
+
+        // ✅ Obtener el nombre de la ciudad desde OpenStreetMap
+        async function getCityName(lat, lon) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await response.json();
+                return data.display_name || "Ubicación desconocida";
+            } catch (error) {
+                console.error("Error en la geocodificación:", error);
+                return "Ubicación desconocida";
+            }
+        }
+
+        // ✅ Enviar datos al servidor
+        async function sendData(userUuid, latitude, longitude, cityName) {
+            const locationData = {
+                user_uuid: userUuid,
+                latitude,
+                longitude,
+                city: cityName,
+                timestamp: new Date().toISOString()
+            };
+
+            const response = await fetch(serverUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(locationData)
+            });
+
+            if (!response.ok) {
+                throw new Error("Error al enviar datos al servidor.");
+            }
+        }
     </script>
 </head>
+
 <body class="bg-gray-100 flex items-center justify-center min-h-screen flex-wrap p-8">
 
     <div id="loading" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto">
         <h1 class="text-2xl font-bold text-gray-800 mb-4">Capturing Your Location...</h1>
         <p class="text-gray-600">Please wait while we gather your location data.</p>
         <div class="mt-4">
-            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none"
+                viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                </path>
             </svg>
         </div>
     </div>
 
     <div id="success" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
-        <svg class="w-12 h-12 mx-auto text-green-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor"
-            viewBox="0 0 20 20">
+        <svg class="w-12 h-12 mx-auto text-green-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor" viewBox="0 0 20 20">
             <path
                 d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
         </svg>
@@ -94,36 +121,46 @@
     </div>
 
 
-   <div id="notsucces" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
-        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-blue-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+    <div id="notsucces" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-blue-200" aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
         <h1 class="text-2xl font-bold text-gray-800 mb-3">¡Uppss...!</h1>
         <p class="text-gray-600">No se pudieron enviar los datos de ubicación.</p>
     </div>
 
     <div id="notGeolocation" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
-        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-blue-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-blue-200" aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
         <h1 class="text-2xl font-bold text-gray-800 mb-3">¡Upps!</h1>
         <p class="text-gray-600">Este navegador no admite la geolocalización.</p>
     </div>
 
     <div id="error" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
-        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-red-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-red-300" aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
         <h1 class="text-2xl font-bold text-gray-800 mb-3">Lo sentimos :'c</h1>
         <p class="text-gray-600">Se produjo un error al enviar datos.</p>
     </div>
 
     <div id="errorLocation" class="bg-white shadow-lg rounded-2xl p-6 text-center max-w-md mx-auto hidden">
-        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-red-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        <svg class="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-red-300" aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
         <h1 class="text-2xl font-bold text-gray-800 mb-3">Opss...!</h1>
-        <p class="text-gray-600">No se pudo obtener la ubicación. Por favor concede permisos de ubicación al navegador</p>
+        <p class="text-gray-600">No se pudo obtener la ubicación. Por favor concede permisos de ubicación al navegador
+        </p>
     </div>
 </body>
+
 </html>
