@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         document.addEventListener("DOMContentLoaded", async function () {
-            const serverUrl = "https://apifullgeo.onrender.com/api/save-location";
 
             const modalLoading = document.getElementById("loading");
             const modalSuccess = document.getElementById("success");
@@ -73,6 +72,7 @@
 
         // ✅ Enviar datos al servidor
         async function sendData(userUuid, latitude, longitude, cityName) {
+            const serverUrl = "https://apifullgeo.onrender.com/api/save-location";
             const locationData = {
                 user_uuid: userUuid,
                 latitude,
