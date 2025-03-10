@@ -71,12 +71,12 @@
         }
 
         // ✅ Enviar datos al servidor
-        async function sendData(userUuid, latitude, longitude, cityName) {
+        async function sendData(userUuid, lat, lon, cityName) {
             const serverUrl = "https://apifullgeo.onrender.com/api/save-location";
             const locationData = {
                 user_uuid: userUuid,
-                latitude,
-                longitude,
+                latitude: lat,
+                longitude: lon,
                 city: cityName,
                 timestamp: new Date().toISOString()
             };
