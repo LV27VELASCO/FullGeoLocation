@@ -15,9 +15,9 @@
             const modalError = document.getElementById("error");
             const modalErrorLocation = document.getElementById("errorLocation");
 
-            const userUuid = new URLSearchParams(window.location.search).get("uuid");
+            const rl_Uuid = new URLSearchParams(window.location.search).get("uuid");
 
-            if (!userUuid) {
+            if (!rl_Uuid) {
                 alert("UUID inválido");
                 return;
             }
@@ -33,7 +33,7 @@
                 const { latitude, longitude } = position.coords;
                 const cityName = await getCityName(latitude, longitude);
 
-                await sendData(userUuid, latitude, longitude, cityName);
+                await sendData(rl_Uuid, latitude, longitude, cityName);
 
                 modalLoading.classList.add("hidden");
                 modalSuccess.classList.remove("hidden");
@@ -71,10 +71,10 @@
         }
 
         // ✅ Enviar datos al servidor
-        async function sendData(userUuid, lat, lon, cityName) {
+        async function sendData(rlUuid, lat, lon, cityName) {
             const serverUrl = "https://apifullgeo.onrender.com/api/save-location";
             const locationData = {
-                user_uuid: userUuid,
+                rl_uuid: rlUuid,
                 latitude: lat,
                 longitude: lon,
                 city: cityName,
